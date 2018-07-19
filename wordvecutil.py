@@ -1,3 +1,4 @@
+# https://github.com/ucdaviscl/soliloquy_variation/blob/master/wordvecutil.py
 # wordvecutil: Basic operations for word vectors
 #  - loading, cosine similarity, nearest neighbors
 #
@@ -104,36 +105,27 @@ class word_vectors:
             return None
         return self.v[self.word2idx[w1]].dot(self.v[self.word2idx[w2]])
 
-# a sample driver
-
-def main(argv):
-    fname = ''
-    try:
-        opts, args = getopt.getopt(argv, "hv:")
-    except getopt.GetoptError:
-        print("word_vectors.py -v <word_vectors_txt>")
-        sys.exit(1)
-    for opt, arg in opts:
-        if opt == '-h':
-            print("word_vectors.py -v <word_vectors_txt>")
-            sys.exit()
-        elif opt == '-v':
-            fname = arg
-
-    if fname == '':
+# a sample drive
+fname = ''
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "hv:")
+except getopt.GetoptError:
+    print("word_vectors.py -v <word_vectors_txt>")
+    sys.exit(1)
+for opt, arg in opts:
+    if opt == '-h':
         print("word_vectors.py -v <word_vectors_txt>")
         sys.exit()
+    elif opt == '-v':
+        fname = arg
 
-    print("Loading...")
+if fname == '':
+    print("word_vectors.py -v <word_vectors_txt>")
+    sys.exit()
 
-    # create the vectors from a file in text format,
-    # and load at most 100000 vectors
-    v = word_vectors(fname, 100000)
-    print("Done.")
+print("Loading...")
 
-    
-    print(v.near('SWE', 1000))
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
-
+# create the vectors from a file in text format,
+# and load at most 100000 vectors
+v = word_vectors(fname, 100000)
+print("Done.")

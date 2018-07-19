@@ -2,6 +2,7 @@
 # Broad vs narrow, phonetic vs phonemic
 # numbers? (stress)
 # Replace # with #_ and _# ?
+# Remove entires w/o numbers?
 #
 # Manually corrected
 # Header tags: kor_word-list_1982_01.html, kor_word-list_1986_01.html
@@ -18,19 +19,14 @@ import pickle
 
 DIR = "Language"
 SAVE = None # Name of file to save language/transcript pairs
-LOAD = None # Name of file containing language/transcript pairs
+DELIMITER = "⦀" # Separates language name from transcript
 
 
-if len(sys.argv) > 1:
-	if sys.argv != 3:
-		print("Improper number of arguments... terminating.")
-		sys.exit()
-	if sys.argv[1].lower() == "-save":
-		SAVE = sys.argv[2]
-	elif sys.argv[1].lower() == "-load":
-		LOAD = sys.argv[2]
-	else:
-		print("Unknown argument; valid arguments: -save [file] OR -load [file]")
+if len(sys.argv) != 3 or sys.argv[1].lower() != "-save":
+	print("ucla_parse.py -save [file]")
+	sys.exit()
+else:
+	SAVE = sys.argv[2]
 
 class UCLADataParser(HTMLParser):
 	'''
@@ -99,9 +95,10 @@ class UCLADataParser(HTMLParser):
 		'''
 		
 		# Normalization
-		# NFKC - Normalizes, decomposes, recomposes
-		# NFKD - Normalizes, decomposes
-		text = unicodedata.normalize("NFKC", data) # normalizes variants of same symbols, fixes xa0 spaces
+		# NKCC - Normalizes, decomposes, recomposes
+		# NFD - Normalizes, decomposes
+		# text = unicodedata.normalize("NFC", data) # normalizes variants of same symbols, fixes xa0 spaces
+		text = data
 		
 		if self.in_cell:
 			# Parsing data inside cell
@@ -188,86 +185,19 @@ def get_transcripts(f):
 	else:
 		# Returns list of valid transcripts in indicated column 
 		return [row[index] for row in parser.table[1:] if not (row[index].isspace() or any(substring.lower() in row[index].lower() for substring in BAD_TRANSCRIPT))]
-		
-def tokenize(transcript, tag):
-	'''
-	Split transcript into symbols, adds
-	start/end symbols.
-	
-	Arguments:
-	* transcript - String to tokenize
-	* tag - 3-letter language tag
-	
-	Return:
-	* list of tokens
-	'''
-	
-	in_paren = False
-	
-	tokens = []
-	tokens.append("#")
-	for c in transcript:
-		if c == "(":
-			in_paren = True
-		elif c == ")":
-			in_paren = False
-		elif in_paren:
-			continue
-		elif c.isspace():
-			if tokens[-1] != "#":
-				tokens.append("#")
-		elif c == "/":
-			break
-		elif c == "|" and tag == "YEY": # YEY: | used like /
-			break
-		elif c in ["|", "[", "]"]: 
-			continue
-		else:
-			tokens.append(c)
-	if tokens[-1] != "#":
-		tokens.append("#")
-		
-	return tokens
-	
-def add_tags(tokens, tag):
-	'''
-	Appends "￨" (OpenNMT feature delimiter)
-	followed by tag to each element in list
-	
-	Arguments:
-	* tokens - List of elements to be tagged
-	* tag - Tag to append to elements
-	
-	Return:
-	* Tagged list
-	'''
-	return [token + "￨" + tag for token in tokens]
 
-## == BODY == ##
+data = []	
 
-data = []
-
-if LOAD:
-# Loading from file (skip parsing)
-	data = pickle.load(open(LOAD, "rb"))
+for folder in os.scandir(DIR):
+	# Iterates over folders, which correspond to languages, in HTML directory
+	if os.path.basename(folder.name) in ["HGM"]: # langs w/o transcriptions
+		continue
+	for file in os.scandir(folder.path):
+		#print(file.path)
+		transcripts = get_transcripts(file)
+		if transcripts != None:
+			data.extend([(transcript, os.path.basename(file.name).split("_")[0].upper()) for transcript in transcripts])
 	
-else:
-	for folder in os.scandir(DIR):
-		# Iterates over folders, which correspond to languages, in HTML directory
-		if os.path.basename(folder.name) in ["HGM"]: # langs w/o transcriptions
-			continue
-		for file in os.scandir(folder.path):
-			#print(file.path)
-			transcripts = get_transcripts(file)
-			if transcripts != None:
-				data.extend([(transcript, os.path.basename(file.name).split("_")[0].upper()) for transcript in transcripts])
-	if SAVE:
-		pickle.dump(data, open(SAVE, "wb"))
-	
-
+f = open(SAVE, "w")
 for (transcript, tag) in data:
-	tokens = tokenize(transcript, tag) # Tokenize
-	tokens_tagged = add_tags(tokens, tag) # Add tags to each token
-				
-	# Print tokens separated by space			
-	print(" ".join(tokens_tagged))
+	f.write(tag + DELIMITER + transcript.replace("\n", " ") + "\n")
