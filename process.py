@@ -5,7 +5,29 @@ File format: One transcription per line
 	TAG⦀TRANSCRIPTION
 '''
 
+def unique(l):
+	'''
+	Removes duplicates from list of tokens/tags
+	
+	Arguments:
+	* l: list of (list, string) doubles
+	
+	Return:
+	* List without duplicates
+	'''
+	seen = dict()
+	result = []
+	
+	for (tokens, tag) in l:
+		word = "".join(tokens)
+		if (word, tag) not in seen:
+			seen[(word, tag)] = 1
+			result.append((tokens, tag))
+			
+	return result
+
 MIN_LENGTH = 2
+LANG_MIN = 500 # Minimum count of transcripts in language for inclusion
 
 # == Symbol Groups by Type ==
 UNKNOWN_PHONEME = {
@@ -134,8 +156,9 @@ DELETE = { # Delete symbol
 	"◌", # ????
 	"˞",
 	"̽", # Mid-centralized (3)
-	"̪̥"
-	"ʼ"
+	"̪̥",
+	"ʼ",
+	"∅", "⁻", "⁓", "ᶣ", "˭", "ˤ", "͇"
 } | PHONATION | NASALIZATION | LENGTH | VOWEL_OTHER | SYLLABICITY | RELATIVE_ARTICULATION | SYLLABIC | OTHER | LAMINAL | SECONDARY_ARTICULATION
 
 DELETE_ALL_AFTER = { # Delete symbol and all following
@@ -292,22 +315,34 @@ def add_tag(tokens, tag):
 	Return:
 	* Tagged list
 	'''
-	return [token + "￨" + tag for token in tokens if len(tokens) >= MIN_LENGTH]
+	return [token + "￨" + tag.replace(" ", "") for token in tokens if len(tokens) >= MIN_LENGTH]
 
 token_counts = collections.Counter()
+tag_counts = collections.Counter() # Counts numbers of valid transcripts with each language tag
 f = open(SAVE, "w")
 
 # Gets tags, transcriptions from file
 data = read_transcriptions(open(LOAD, "r"))
+data_processed = []
 
 for (tag, transcriptions) in data:
 	for transcription in transcriptions.split(): # Splits transcriptions w/ spaces
 		tokens = tokenize(transcription, tag)
-		count_tokens(tokens, token_counts)
+		if tokens != []:
+			data_processed.append((tokens, tag))
+			
+# Exclude duplicates
+#data_processed = [element for i, element in enumerate(data_processed) if element not in data_processed[:i]]
+data_processed = unique(data_processed)
+
+for (tokens, tag) in data_processed:
+	count_tokens(tokens, token_counts)
+	tag_counts[tag] += 1 # Increments language count
+
+for (tokens, tag) in data_processed:
+	if tag_counts[tag] >= LANG_MIN:
 		tokens_tagged = add_tag(tokens, tag)
-		
-		if tokens_tagged != []:
-			f.write(" ".join(tokens_tagged) + "\n")
+		f.write(" ".join(tokens_tagged) + "\n")
 	
 for token in sorted(token_counts.keys()):
 	print(token + "\t" + str(token_counts[token]))

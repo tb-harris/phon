@@ -1,15 +1,19 @@
 #TODO: Deal with parentheses meaning optional - split into two transcripts?
+# grep -o "{{IPA|.*}}" enwiktionary-20180420-pages-articles.xml > grep.txt
 
 import time
 import sys
 from collections import Counter
+import pickle
 
 INPUT = "grep.txt"
 OUTPUT = sys.argv[1]
 DELIMITER = "⦀"
+NAMES = pickle.load(open("langs.pydict", "rb"))
+BAD_LANGUAGE = {"old", "middle", "classical", "gothic", "proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"}
 
 start_time = time.time()
-
+			
 def convert(transcript, language):
 	word = []
 	word = ["#_"]
@@ -29,21 +33,30 @@ for line in r:
 	print(line)
 	lang = ""
 	transcripts = []
-	string = line.split("{")[2].split("}")[0]
-	parse = string.split("|")
-	if parse[0] != "IPA":
-		bad += 1
-		continue
-	for element in parse:
-		if len(element) < 4:
+	
+	string = line.split("{{")[1].split("}}")[0]
+	for string in line.split("{{"):
+		if "}}" not in string:
 			continue
-		elif element[0:5] == "lang=":
-			lang = element.split("=")[1]
-#			if len(lang) > 3: # Excludes a few langauges (Scots, etc) w/o 2 letter codes
-#				lang = ""
-		elif (element[0] == "/" or element[0] == "[") and (element[-1] == "/" or element[-1] == "]"): # Transcript
-			if len(element) > 1 and element[1] != "-" and ";" not in element: # ; exlucdes transcripts w/ subscripts - mainly affects ki language
-				transcripts.append(element[1:-1])
+		parse = string.split("}}")[0].split("|")
+		if parse[0] != "IPA":
+			bad += 1
+			continue
+		for element in parse:
+			if len(element) < 4:
+				continue
+			elif element[0:5] == "lang=":
+				lang = element.split("=")[1]
+#				if len(lang) > 3: # Excludes a few langauges (Scots, etc) w/o 2 letter codes
+#					lang = ""
+			elif (element[0] == "/" or element[0] == "[") and (element[-1] == "/" or element[-1] == "]"): # Transcript
+				if len(element) > 1 and element[1] == "-" or ";" in element: # ; exlucdes transcripts w/ subscripts - mainly affects ki language
+					pass
+				elif "(" in element and ")" in element and len(element.split("(")[1].split(")")[0]) == 1: # Optional phones
+					transcripts.append(element[1:-1])
+					transcripts.append(element[1:-1].replace("(", "").replace(")", ""))
+				else:
+					transcripts.append(element[1:-1])
 			
 	if lang == "":
 		bad += 1
@@ -54,7 +67,10 @@ for line in r:
 	
 	for transcript in transcripts:
 		lang_counts[lang] += 1
-		data.append((transcript, lang))
+		lang_name = NAMES.get(lang, lang) # Full language name
+		if any(substring.lower() in lang_name.lower() for substring in BAD_LANGUAGE):
+			continue
+		data.append((transcript, NAMES.get(lang, lang)))
 						
 w = open(OUTPUT, "w")
 for (transcript, lang) in data:
