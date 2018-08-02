@@ -6,7 +6,6 @@ File format: One transcription per line
 '''
 
 MIN_LENGTH = 2
-LANG_MIN = 500 # Minimum count of transcripts in language for inclusion
 #BAD_LANGUAGE = {"proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed
 BAD_LANGUAGE = {"old", "middle", "classical", "gothic", "proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed, extinct prior to documentation
 
@@ -162,8 +161,13 @@ import collections
 import unicodedata
 
 DELIMITER = "⦀" # Separates language name from transcription
+
+if len(argv) != 4:
+	print("process.py load save min_count")
+	
 LOAD = sys.argv[1]
 SAVE = sys.argv[2]
+LANG_MIN = sys.argv[3]
 
 def unique(l):
 	'''
