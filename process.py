@@ -162,8 +162,9 @@ import unicodedata
 
 DELIMITER = "⦀" # Separates language name from transcription
 
-if len(argv) != 4:
+if len(sys.argv) != 4:
 	print("process.py load save min_count")
+	sys.exit()
 	
 LOAD = sys.argv[1]
 SAVE = sys.argv[2]
