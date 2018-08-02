@@ -6,8 +6,8 @@ import sys
 from collections import Counter
 import pickle
 
-INPUT = "grep.txt"
-OUTPUT = sys.argv[1]
+INPUT = sys.argv[1]
+OUTPUT = sys.argv[2]
 DELIMITER = "⦀"
 NAMES = pickle.load(open("langs.pydict", "rb"))
 

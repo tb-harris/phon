@@ -5,30 +5,10 @@ File format: One transcription per line
 	TAG⦀TRANSCRIPTION
 '''
 
-def unique(l):
-	'''
-	Removes duplicates from list of tokens/tags
-	
-	Arguments:
-	* l: list of (list, string) doubles
-	
-	Return:
-	* List without duplicates
-	'''
-	seen = dict()
-	result = []
-	
-	for (tokens, tag) in l:
-		word = "".join(tokens)
-		if (word, tag) not in seen:
-			seen[(word, tag)] = 1
-			result.append((tokens, tag))
-			
-	return result
-
 MIN_LENGTH = 2
 LANG_MIN = 500 # Minimum count of transcripts in language for inclusion
-BAD_LANGUAGE = {"old", "middle", "classical", "gothic", "proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"}
+#BAD_LANGUAGE = {"proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed
+BAD_LANGUAGE = {"old", "middle", "classical", "gothic", "proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed, extinct prior to documentation
 
 # == Symbol Groups by Type ==
 UNKNOWN_PHONEME = {
@@ -184,6 +164,27 @@ import unicodedata
 DELIMITER = "⦀" # Separates language name from transcription
 LOAD = sys.argv[1]
 SAVE = sys.argv[2]
+
+def unique(l):
+	'''
+	Removes duplicates from list of tokens/tags
+	
+	Arguments:
+	* l: list of (list, string) doubles
+	
+	Return:
+	* List without duplicates
+	'''
+	seen = dict()
+	result = []
+	
+	for (tokens, tag) in l:
+		word = "".join(tokens)
+		if (word, tag) not in seen:
+			seen[(word, tag)] = 1
+			result.append((tokens, tag))
+			
+	return result
 
 def normalize(x):
 	string = x
@@ -347,11 +348,14 @@ for (tokens, tag) in data_processed:
 	count_tokens(tokens, token_counts)
 	tag_counts[tag] += 1 # Increments language count
 
+langs_allowed = {lang for lang, count in tag_counts.items() if count >= LANG_MIN}
+
 for (tokens, tag) in data_processed:
-	if tag_counts[tag] >= LANG_MIN:
+	if tag in langs_allowed:
 		tokens_tagged = add_tag(tokens, tag)
 		f.write(" ".join(tokens_tagged) + "\n")
 	
 for token in sorted(token_counts.keys()):
 	print(token + "\t" + str(token_counts[token]))
 print("Total Tokens:", len(token_counts))
+print("Total Languages:", len(langs_allowed))
