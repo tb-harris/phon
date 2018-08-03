@@ -15,26 +15,13 @@ NAMES = pickle.load(open("langs.pydict", "rb"))
 
 start_time = time.time()
 
-def convert(transcript, language):
-	'''
-	Depreciated
-	'''
-	word = []
-	word = ["#_"]
-	for c in transcript:
-		if c == "." or c == "ˈ":
-			continue
-		word.append(c)# + "_" + language)
-	word.append("_#")
-	return word
-
 r = io.open(INPUT, "r", encoding="utf-8")
 bad = 0
 lang_counts = Counter()
 data = []
 
 for line in r:
-	print(line)
+	print(line.encode('utf-8'))
 	lang = ""
 	transcripts = []
 	
