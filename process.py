@@ -364,6 +364,7 @@ for (tokens, tag) in data_processed:
 		f.write(" ".join(tokens_tagged) + "\n")
 	
 for token in sorted(token_counts.keys()):
-	print(token + "\t" + str(token_counts[token]))
+	print((token + "\t" + str(token_counts[token])).encode('utf-8'))
+	
 print("Total Tokens:", len(token_counts))
 print("Total Languages:", len(langs_allowed))
