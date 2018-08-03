@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 '''
 Normalizes, tokenizes, and tags phonetic transcriptions
 from file to format suitable for processing by OpenNMT
@@ -159,6 +161,7 @@ CAN_VOICELESS = {"l", "m", "n", "r", "w", "ɲ", "ɹ", "ɽ", "ɾ", "ʋ"}
 import sys
 import collections
 import unicodedata
+import io
 
 DELIMITER = "⦀" # Separates language name from transcription
 
@@ -168,7 +171,7 @@ if len(sys.argv) != 4:
 	
 LOAD = sys.argv[1]
 SAVE = sys.argv[2]
-LANG_MIN = sys.argv[3]
+LANG_MIN = int(sys.argv[3])
 
 def unique(l):
 	'''
@@ -333,10 +336,10 @@ def add_tag(tokens, tag):
 
 token_counts = collections.Counter()
 tag_counts = collections.Counter() # Counts numbers of valid transcripts with each language tag
-f = open(SAVE, "w")
+f = io.open(SAVE, "w", encoding="utf-8")
 
 # Gets tags, transcriptions from file
-data = read_transcriptions(open(LOAD, "r"))
+data = read_transcriptions(io.open(LOAD, "r", encoding="utf-8"))
 data_processed = []
 
 for (tag, transcriptions) in data:

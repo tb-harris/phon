@@ -1,10 +1,12 @@
-#TODO: Deal with parentheses meaning optional - split into two transcripts?
+# encoding: utf-8
+
 # grep -o "{{IPA|.*}}" enwiktionary-20180420-pages-articles.xml > grep.txt
 
 import time
 import sys
 from collections import Counter
 import pickle
+import io
 
 INPUT = sys.argv[1]
 OUTPUT = sys.argv[2]
@@ -12,8 +14,11 @@ DELIMITER = "⦀"
 NAMES = pickle.load(open("langs.pydict", "rb"))
 
 start_time = time.time()
-			
+
 def convert(transcript, language):
+	'''
+	Depreciated
+	'''
 	word = []
 	word = ["#_"]
 	for c in transcript:
@@ -23,7 +28,7 @@ def convert(transcript, language):
 	word.append("_#")
 	return word
 
-r = open(INPUT, "r")
+r = io.open(INPUT, "r", encoding="utf-8")
 bad = 0
 lang_counts = Counter()
 data = []
@@ -69,6 +74,6 @@ for line in r:
 		lang_name = NAMES.get(lang, lang) # Full language name
 		data.append((transcript, NAMES.get(lang, lang)))
 						
-w = open(OUTPUT, "w")
+w = io.open(OUTPUT, "w", encoding="utf-8")
 for (transcript, lang) in data:
 	w.write(lang + DELIMITER + transcript + "\n")
