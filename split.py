@@ -5,13 +5,16 @@ split.py data_path training_path val_path (test_path)
 '''
 import random
 import sys
+import io
 
-f = open(sys.argv[1])
-r = open(sys.argv[2], "w")
-v = open(sys.argv[3], "w")
-s = None
+f = io.open(sys.argv[1], "r", encoding="utf-8")
+r = io.open(sys.argv[2], "w", encoding="utf-8")
+v = io.open(sys.argv[3], "w", encoding="utf-8")
+
 if len(sys.argv) >= 5:
-	open(sys.argv[4], "w")
+	s = io.open(sys.argv[4], "w", encoding="utf-8")
+else:
+	s = None
 
 for line in f:
 	n = random.randint(0, 9)
