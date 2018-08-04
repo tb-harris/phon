@@ -113,17 +113,25 @@ class word_vectors:
         return vecs
 
     # near gets the nearest neighbors of a word
-    # word: the target word
+    # target: target word or numpy array
     # numnear: number of nearest neighbors
 
-    def near(self, word, numnear = 10):
+    def near(self, target, numnear = 10):
 
-        # check if the word is in our index
-        if not word in self.word2idx:
-            return None
+        # check if string (instead of numpy array)
+        if type(target) is str:
+            # check if the word is in our index
+            if target in self.word2idx:
+                vector = self.v[self.word2idx[target]]
+            else:
+                return None
+        else: # numpy array
+            vector = target
+            norm = numpy.linalg.norm(vector, ord=None)
+            vector /= norm
 
         # get the distance to all the words we know.
-        dist = self.v.dot(self.v[self.word2idx[word]])
+        dist = self.v.dot(vector)
 
         # sort by distance
         near = sorted([(dist[i], self.idx2word[i]) for i in range(len(dist))], reverse=True)
@@ -144,6 +152,26 @@ class word_vectors:
         if not w2 in self.word2idx:
             return None
         return self.v[self.word2idx[w1]].dot(self.v[self.word2idx[w2]])
+        
+        
+    def analogy(self, positive, negative, n = 10):
+    	'''
+    	Returns n vectors most similar to
+    		Σpositive - Σnegative
+    	
+    	Arguments:
+    	* positive - list of words
+    	* negative - list of words
+    	
+    	Return:
+    	* vector info
+    	'''
+    	
+    	# Get Σpositive - Σnegative
+    	difference = sum([self.v[self.word2idx[w]] for w in positive]) - sum([self.v[self.word2idx[w]] for w in negative])
+    	
+    	return self.near(difference, n)
+    
     
     def cluster(self, k):
         kmeans = sklearn.cluster.KMeans(n_clusters=k)

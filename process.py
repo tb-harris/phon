@@ -8,8 +8,8 @@ File format: One transcription per line
 '''
 
 MIN_LENGTH = 2
-#BAD_LANGUAGE = {"proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed
-BAD_LANGUAGE = {"old", "middle", "classical", "gothic", "proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed, extinct prior to documentation
+BAD_LANGUAGE = {"proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed
+#BAD_LANGUAGE = {"old", "middle", "classical", "gothic", "proto", "esperanto", "ido", "lojban", "interlingua", "volap", "toki", "translingual"} # excludes constructed, reconstructed, extinct prior to documentation
 
 # == Symbol Groups by Type ==
 UNKNOWN_PHONEME = {
