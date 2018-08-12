@@ -362,6 +362,9 @@ for (tokens, tag) in data_processed:
 	if tag in langs_allowed:
 		tokens_tagged = add_tag(tokens, tag)
 		f.write(" ".join(tokens_tagged) + "\n")
+		
+for lang in langs_allowed:
+	print(lang + "\t" + str(tag_counts[lang]))
 	
 for token in sorted(token_counts.keys()):
 	print((token + "\t" + str(token_counts[token])).encode('utf-8'))

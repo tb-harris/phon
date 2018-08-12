@@ -4,6 +4,8 @@
 #
 # modified to work with opennmt format
 
+IE = {"Germanic", "Celtic", "Balto-Slavic", "Romance", "Indo-Iranian", "Indo-European Isolate"}
+
 import numpy
 import sys
 import getopt
@@ -14,10 +16,15 @@ import sklearn.manifold
 from matplotlib import pyplot
 
 import pickle
+import collections
+
 NAMES = None
 FAMILIES = None
 COUNTS = None
 MIN_COUNT = 0
+
+def fix_spaces(word):
+	return "".join([" " + c if c.isupper() and i != 0 and word[i - 1].isalpha() else c for i, c in enumerate(word)]).lstrip()
 
 def generate_colors(n):
     '''
@@ -66,7 +73,7 @@ class word_vectors:
                 f.seek(0) # Returns to start of file
                 dim = len(toks) - 1
                 if COUNTS is not None:
-                    numtypes = sum(1 for line in f if not COUNTS[line.split()[0]] < MIN_COUNT) # Counts lines in file, ignores vectors w/ below-min freq
+                    numtypes = sum(1 for line in f if not COUNTS[fix_spaces(line.split()[0])] < MIN_COUNT) # Counts lines in file, ignores vectors w/ below-min freq
                 else:
                     numtypes = sum(1 for line in f)
                     
@@ -87,9 +94,16 @@ class word_vectors:
                 word, vecstr = line.split(' ', 1)
                 vecstr = vecstr.rstrip()
                 
+                # Fix removal of spaces
+                word = fix_spaces(word)
+                
                 # excludes words below minimum count
                 if COUNTS is not None and COUNTS[word] < MIN_COUNT:
                     continue
+                    
+                # excludes words not in families
+                #if not (word in FAMILIES["Germanic"] or word in FAMILIES["Celtic"] or word in FAMILIES["Balto-Slavic"] or word in FAMILIES["Romance"]):
+                #	continue
 
                 # now make the vector a numpy array
                 vec = numpy.fromstring(vecstr, numpy.float16, sep=' ')
@@ -173,8 +187,17 @@ class word_vectors:
     	return self.near(difference, n)
     
     
-    def cluster(self, k):
-        kmeans = sklearn.cluster.KMeans(n_clusters=k)
+    def cluster(self, k, centroids = None):
+    
+        # Get centroids
+        if centroids is not None:
+            init = numpy.array([self.v[self.word2idx[word]] for word in centroids])
+            n_init = 1
+        else:
+            init = "k-means++"
+            n_init = 200
+        
+        kmeans = sklearn.cluster.KMeans(n_clusters=k, init=init, n_init=n_init)
         
         # Compute clusters; membership = list of corresponding cluster IDs
         membership = kmeans.fit_predict(v.v)
@@ -182,10 +205,10 @@ class word_vectors:
         # Plot clusters
         self.plot(membership)
         
-        # Build list of lists of vector labels within each centroid
+        # Build list of lists of vector labels within each cluster
         return [
-            [self.idx2word[i] for i in range(len(membership)) if membership[i] == centroid]
-            for centroid in range(k)]
+            [self.idx2word[i] for i in range(len(membership)) if membership[i] == cluster]
+            for cluster in range(k)]
     
     def plot(self, groups = []):
                 
@@ -274,7 +297,7 @@ for opt, arg in opts:
     elif opt == '-f':
         FAMILIES = pickle.load(open(arg, "rb"))
     elif opt == '-c':
-        COUNTS = {line.split()[0]: int(line.split()[2]) for line in open(arg, "r") if len(line.split()) >= 2}
+        COUNTS = {fix_spaces(line.split("\t")[0]): int(line.split("\t")[1]) for line in open(arg, "r") if len(line.split("\t")) >= 2}
     elif opt == '-m':
         MIN_COUNT = int(arg)
         
@@ -289,3 +312,26 @@ print("Loading...")
 # and load at most 100000 vectors
 v = word_vectors(fname, 100000)
 print("Done.")
+
+sim = collections.defaultdict(dict)
+
+for lang1 in v.idx2word:
+	for lang2 in v.idx2word:
+		if lang1 != lang2:
+			sim[lang1][lang2] = v.sim(lang1, lang2)
+
+# set of all IE langs
+langs_ie = set.union(*[FAMILIES[family] for family in IE])
+
+for family1 in IE:
+	for family2 in IE:
+		sims = [sim[lang1][lang2] for lang2 in FAMILIES[family2] for lang1 in FAMILIES[family1] if lang1 in v.idx2word and lang2 in v.idx2word and lang1 != lang2]
+		print(family1, family2, numpy.mean(sims))
+	#sims_ie = [sim[lang1][lang2] for lang2 in  
+	
+sims = [sim[lang1][lang2] for lang1 in langs_ie for lang2 in langs_ie if lang1 != lang2 and lang1 in v.idx2word and lang2 in v.idx2word]
+print("\n\nIE-IE:", numpy.mean(sims))
+
+sims = [sim[lang1][lang2] for lang1 in v.idx2word for lang2 in v.idx2word if lang1 != lang2 and lang1 in langs_ie and lang2 not in langs_ie]
+print("IE-NonIE:", numpy.mean(sims))
+	
